@@ -1,11 +1,14 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { useWebBuilder } from '@/app/providers/WebBuilderProvider';
 import { Footer } from '@/app/components/layout/Footer';
 import { ServingAreasdetailSection } from '@/app/components/sections/ServingAreasdetailSection';
-import api from '@/app/lib/fetch-api';
+import {
+  mapServiceAreaPageToSectionData,
+  resolvePublishedServiceAreaPage,
+} from '@/app/lib/serviceAreaPageData';
 
 interface ServiceAreaClientProps {
   serviceSlug: string;
@@ -20,90 +23,20 @@ export default function ServiceAreaClient({
   const serviceSlug = (params.serviceSlug as string) || serviceSlugProp;
   const areaSlug = (params.areaSlug as string) || areaSlugProp;
 
-  const { site } = useWebBuilder();
-  const [serviceAreaPage, setServiceAreaPage] = useState<Record<string, unknown> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  const { serviceAreaPages, loading: siteLoading } = useWebBuilder();
   const areaName = areaSlug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
-  useEffect(() => {
-    const fetchServiceAreaPage = async () => {
-      if (!site) return;
+  const serviceAreaPage = useMemo(() => {
+    const matched = resolvePublishedServiceAreaPage(serviceAreaPages, serviceSlug, areaSlug);
+    return matched ?? createFallbackData(areaName, serviceSlug);
+  }, [serviceAreaPages, serviceSlug, areaSlug, areaName]);
 
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await api.get(
-          `/public/sites/${site.slug}/service-areas/by-service/${serviceSlug}/${areaSlug}`
-        );
-
-        if (response.success) {
-          setServiceAreaPage(response.data);
-        } else {
-          setServiceAreaPage(createFallbackData(areaName, serviceSlug));
-        }
-      } catch (err: unknown) {
-        const status =
-          err && typeof err === 'object' && 'status' in err
-            ? (err as { status?: number }).status
-            : undefined;
-        const message =
-          err && typeof err === 'object' && 'message' in err
-            ? String((err as { message?: unknown }).message)
-            : '';
-
-        if (status === 404 || message.includes('404')) {
-          setServiceAreaPage(createFallbackData(areaName, serviceSlug));
-        } else {
-          setError('Failed to load service area page');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchServiceAreaPage();
-  }, [site, serviceSlug, areaSlug, areaName]);
-
-  if (loading) return null;
-
-  if (error || !serviceAreaPage) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Service Area Not Found</h2>
-          <p className="text-gray-600 mb-4">The service area page could not be found.</p>
-          <a href="/" className="inline-block text-blue-600 hover:underline">
-            Return Home
-          </a>
-        </div>
-      </div>
-    );
-  }
+  if (siteLoading) return null;
 
   return (
     <div className="min-h-screen">
       <main>
-        <ServingAreasdetailSection
-          data={{
-            hero: serviceAreaPage.hero,
-            highlights: serviceAreaPage.highlights,
-            about: serviceAreaPage.about,
-            ourServices: serviceAreaPage.ourServices,
-            pageServiceId:
-              typeof serviceAreaPage.serviceId === 'string'
-                ? serviceAreaPage.serviceId
-                : (serviceAreaPage.serviceId as { _id?: string })?._id,
-            cta: serviceAreaPage.cta,
-            serviceDetails: serviceAreaPage.serviceDetails,
-            serviceOverview: serviceAreaPage.serviceOverview,
-            whyChooseUs: serviceAreaPage.whyChooseUs,
-            faqs: serviceAreaPage.faqs,
-            servingAreas: serviceAreaPage.servingAreas,
-          }}
-        />
+        <ServingAreasdetailSection data={mapServiceAreaPageToSectionData(serviceAreaPage)} />
       </main>
       <Footer />
     </div>

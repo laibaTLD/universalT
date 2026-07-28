@@ -51,7 +51,7 @@ export function WhyChooseUsSection({ whyChooseUsSection, className }: WhyChooseU
         <div
           ref={titleRef}
           className={cn(
-            'mb-8 lg:mb-10 max-w-3xl transition-all duration-1000',
+            'mb-8 lg:mb-10 mx-auto max-w-3xl transition-all duration-1000',
             titleVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           )}
         >
@@ -59,6 +59,7 @@ export function WhyChooseUsSection({ whyChooseUsSection, className }: WhyChooseU
             eyebrow="Why Choose Us"
             title={title}
             description={description}
+            align="center"
             descriptionClassName="max-w-2xl"
           />
         </div>

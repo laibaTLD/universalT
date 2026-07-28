@@ -4,13 +4,13 @@ import React from 'react';
 import { TiptapRenderer } from '@/app/components/ui/TiptapRenderer';
 import { cn, getImageSrc } from '@/app/lib/utils';
 import { OptimizedImage, IMAGE_SIZES } from '@/app/components/ui/OptimizedImage';
+import { useSectionTheme } from '@/app/hooks/useSectionTheme';
 
 interface ServiceDetailsSectionProps {
     service: any;
     galleryImages: any[];
 }
 
-// Utility function to get full image URL
 const getFullImageUrl = (url?: string): string | undefined => {
     if (!url) return undefined;
     const resolved = getImageSrc(url);
@@ -21,19 +21,10 @@ export const ServiceDetailsSection: React.FC<ServiceDetailsSectionProps> = ({
     service,
     galleryImages
 }) => {
+    const { colors, fonts } = useSectionTheme();
+
     return (
-        <div className="lg:col-span-8">
-            <style>{`
-                .service-description,
-                .service-description * {
-                    color: #000000 !important;
-                }
-                .service-features,
-                .service-features * {
-                    color: #000000 !important;
-                }
-            `}</style>
-            {/* Featured Image */}
+        <div className="lg:col-span-8" style={{ fontFamily: fonts.body, color: colors.mainText }}>
             {service.thumbnailImage?.url && (
                 <div className="mb-8">
                     <OptimizedImage
@@ -47,13 +38,10 @@ export const ServiceDetailsSection: React.FC<ServiceDetailsSectionProps> = ({
                 </div>
             )}
 
-            {/* Full Description */}
             {service.description && (
                 <div
-                    className="prose prose-lg max-w-none service-description"
-                    style={{
-                        color: '#000000',
-                    }}
+                    className="prose prose-lg max-w-none"
+                    style={{ color: colors.mainText, fontFamily: fonts.body }}
                 >
                     <TiptapRenderer content={service.description} />
                 </div>
@@ -63,17 +51,13 @@ export const ServiceDetailsSection: React.FC<ServiceDetailsSectionProps> = ({
                 <div className={service.description ? 'mt-12' : ''}>
                     <h2
                         className="text-2xl lg:text-3xl font-semibold mb-4"
-                        style={{
-                            color: '#000000',
-                        }}
+                        style={{ color: colors.mainText, fontFamily: fonts.heading }}
                     >
                         Features
                     </h2>
                     <div
-                        className="prose prose-lg max-w-none service-features"
-                        style={{
-                            color: '#000000',
-                        }}
+                        className="prose prose-lg max-w-none"
+                        style={{ color: colors.mainText, fontFamily: fonts.body }}
                     >
                         {Array.isArray(service.features) ? (
                             <ul>
@@ -90,7 +74,6 @@ export const ServiceDetailsSection: React.FC<ServiceDetailsSectionProps> = ({
                 </div>
             )}
 
-            {/* Gallery Images with Alternating Alignment */}
             {galleryImages.length > 0 && (
                 <div className="mt-12 space-y-8">
                     {galleryImages.map((image: any, index: number) => {
@@ -117,7 +100,7 @@ export const ServiceDetailsSection: React.FC<ServiceDetailsSectionProps> = ({
                                     {image.caption && (
                                         <p
                                             className="text-sm italic"
-                                            style={{ color: '#000000' }}
+                                            style={{ color: colors.secondaryText, fontFamily: fonts.body }}
                                         >
                                             {image.caption}
                                         </p>

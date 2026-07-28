@@ -1,7 +1,9 @@
 import { Metadata } from 'next'
 import { generateMetadata as generatePageMetadata, getPageSeoData } from '@/app/lib/metadata'
-import { Site } from '@/app/lib/types'
+import type { Site, ServiceAreaPage } from '@/app/lib/types'
 import api from '@/app/lib/fetch-api'
+import { findServiceAreaPage } from '@/app/lib/serviceAreaSlugs'
+import { extractServiceAreaPagesList } from '@/app/lib/serviceAreaPageData'
 import ServiceAreaClient from './ServiceAreaClient'
 
 interface ServiceAreaPageProps {
@@ -19,11 +21,14 @@ export async function generateMetadata({ params }: ServiceAreaPageProps): Promis
       const site: Site = defaultSiteResponse.data
       
       // Fetch service area page by service and city
-      const serviceAreaResponse = await api.get(`/public/sites/${site.slug}/service-areas/by-service/${serviceSlug}/${citySlug}`)
+      const pagesResponse = await api.get(`/public/sites/${site.slug}/service-area-pages`, {
+        silent: true,
+      })
+      const pages = extractServiceAreaPagesList(pagesResponse)
+      const serviceAreaPage = findServiceAreaPage(pages, serviceSlug, citySlug)
       
-      if (serviceAreaResponse.success && serviceAreaResponse.data) {
-        const serviceAreaPage = serviceAreaResponse.data
-        return generatePageMetadata(getPageSeoData(serviceAreaPage), site)
+      if (serviceAreaPage) {
+        return generatePageMetadata(getPageSeoData(serviceAreaPage as unknown as ServiceAreaPage), site)
       }
     }
   } catch (error: any) {

@@ -161,10 +161,10 @@ export function Header() {
   const palette = useMemo(() => buildSectionPalette(site), [site]);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [activeServiceIndex, setActiveServiceIndex] = useState<number | null>(0);
   const [mobileAreasOpen, setMobileAreasOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+  const [mobileExpandedServiceSlug, setMobileExpandedServiceSlug] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
 
   const businessName = useMemo(() => getBrandName(site), [site]);
   const phoneNumber = site?.business?.phone?.trim() || site?.business?.emergencyPhone?.trim() || '';
@@ -178,12 +178,15 @@ export function Header() {
     [services, serviceAreaPages, site?.serviceAreas]
   );
 
+  const visibleServices = useMemo(() => services.filter(isVisibleService), [services]);
+
   const homeNavEntries = useMemo<HomeHeaderNavEntry[]>(
     () =>
       buildHeaderNavEntries(pages, {
         includeServingAreas: servingAreaGroups.length > 0,
+        includeServicesDropdown: visibleServices.length > 0,
       }),
-    [pages, servingAreaGroups.length]
+    [pages, servingAreaGroups.length, visibleServices.length]
   );
 
   const contactHref = useMemo(() => {
@@ -196,22 +199,11 @@ export function Header() {
   const subtext = palette.subtext;
 
   useEffect(() => {
-    setIsMounted(true);
     const handleScroll = () => setScrolled(window.scrollY > 24);
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    if (servingAreaGroups.length === 0) {
-      setActiveServiceIndex(null);
-      return;
-    }
-    setActiveServiceIndex((prev) =>
-      prev === null || prev >= servingAreaGroups.length ? 0 : prev
-    );
-  }, [servingAreaGroups.length]);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
@@ -223,9 +215,60 @@ export function Header() {
   const closeMenu = () => {
     setIsOpen(false);
     setMobileAreasOpen(false);
+    setMobileServicesOpen(false);
+    setMobileExpandedServiceSlug(null);
   };
 
-  const servingAreasDropdown = (className?: string) =>
+  const dropdownPanelStyle = {
+    background: `linear-gradient(180deg, ${palette.bgTop} 0%, ${palette.bgBottom} 100%)`,
+    border: `1px solid color-mix(in srgb, ${text} 10%, transparent)`,
+  };
+
+  const servicesNavDropdown = (
+    entry: Extract<HomeHeaderNavEntry, { kind: 'services-dropdown' }>,
+    className?: string
+  ) => (
+    <div className={cn('group relative py-3', className)}>
+      <Link
+        href={entry.href}
+        className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.4em] transition-opacity group-hover:opacity-70"
+        style={{ color: text, fontFamily: fonts.body }}
+      >
+        {entry.name}
+        <svg
+          className="h-2.5 w-2.5 opacity-40 transition-transform duration-300 group-hover:rotate-180"
+          viewBox="0 0 12 12"
+          fill="currentColor"
+        >
+          <path d="M2 4l4 4 4-4" />
+        </svg>
+      </Link>
+
+      <div className="invisible absolute left-1/2 top-full z-50 min-w-[12rem] -translate-x-1/2 pt-3 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+        <div className="py-2" style={dropdownPanelStyle}>
+          <Link
+            href={entry.href}
+            className="block px-4 py-3 text-[9px] font-bold uppercase tracking-[0.28em] transition-opacity hover:opacity-70"
+            style={{ color: text, fontFamily: fonts.body }}
+          >
+            All Services
+          </Link>
+          {visibleServices.map((service) => (
+            <Link
+              key={service._id}
+              href={`/service/${resolveServiceSlug(service)}`}
+              className="block px-4 py-3 text-[9px] font-bold uppercase tracking-[0.28em] transition-opacity hover:opacity-70"
+              style={{ color: subtext, fontFamily: fonts.body }}
+            >
+              {service.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const areasNavDropdown = (className?: string) =>
     servingAreaGroups.length > 0 ? (
       <div className={cn('group relative py-3', className)}>
         <button
@@ -243,62 +286,45 @@ export function Header() {
           </svg>
         </button>
 
-        <div className="invisible absolute left-1/2 top-full z-50 w-[min(100vw-3rem,640px)] -translate-x-1/2 pt-3 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-          <div
-            className="flex overflow-hidden"
-            style={{
-              background: `linear-gradient(180deg, ${palette.bgTop} 0%, ${palette.bgBottom} 100%)`,
-              border: `1px solid color-mix(in srgb, ${text} 10%, transparent)`,
-            }}
-          >
-            <div
-              className="w-[36%] shrink-0 py-2"
-              style={{ borderRight: `1px solid color-mix(in srgb, ${text} 10%, transparent)` }}
-            >
-              {servingAreaGroups.map((group, idx) => (
-                <button
-                  key={group.serviceSlug}
-                  type="button"
-                  onMouseEnter={() => setActiveServiceIndex(idx)}
-                  className="w-full px-4 py-3 text-left text-[9px] font-bold uppercase tracking-[0.28em] transition-opacity"
-                  style={{
-                    color: activeServiceIndex === idx ? text : subtext,
-                    opacity: activeServiceIndex === idx ? 1 : 0.7,
-                    borderLeft:
-                      activeServiceIndex === idx
-                        ? `2px solid ${accent}`
-                        : '2px solid transparent',
-                    fontFamily: fonts.body,
-                  }}
+        <div className="invisible absolute left-1/2 top-full z-50 min-w-[12rem] -translate-x-1/2 pt-3 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+          <div className="py-2" style={dropdownPanelStyle}>
+            {servingAreaGroups.map((group) => (
+              <div key={group.serviceSlug} className="group/service relative">
+                <Link
+                  href={group.href}
+                  className="flex items-center justify-between gap-4 px-4 py-3 text-[9px] font-bold uppercase tracking-[0.28em] transition-opacity hover:opacity-70"
+                  style={{ color: text, fontFamily: fonts.body }}
                 >
                   {group.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex-1 px-5 py-4">
-              {isMounted && activeServiceIndex !== null && (
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
-                  {servingAreaGroups[activeServiceIndex]?.areas.map((area, idx) => (
-                    <Link
-                      key={idx}
-                      href={getServiceAreaPageHref(
-                        servingAreaGroups[activeServiceIndex].serviceSlug,
-                        area,
-                        serviceAreaPages
-                      )}
-                      className="group/area inline-flex items-center gap-2.5 text-[10px] font-medium uppercase tracking-[0.22em] transition-opacity hover:opacity-70"
-                      style={{ color: subtext, fontFamily: fonts.body }}
+                  {group.areas.length > 0 && (
+                    <svg
+                      className="h-2 w-2 shrink-0 opacity-40"
+                      viewBox="0 0 12 12"
+                      fill="currentColor"
                     >
-                      <span className="opacity-40 transition-opacity group-hover/area:opacity-100" style={{ color: accent }}>
-                        +
-                      </span>
-                      {area.city}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                      <path d="M4 2l4 4-4 4" />
+                    </svg>
+                  )}
+                </Link>
+
+                {group.areas.length > 0 && (
+                  <div className="invisible absolute left-full top-0 z-50 min-w-[10rem] pl-2 opacity-0 transition-all duration-300 group-hover/service:visible group-hover/service:opacity-100">
+                    <div className="py-2" style={dropdownPanelStyle}>
+                      {group.areas.map((area, idx) => (
+                        <Link
+                          key={idx}
+                          href={getServiceAreaPageHref(group.serviceSlug, area, serviceAreaPages)}
+                          className="block px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.22em] transition-opacity hover:opacity-70"
+                          style={{ color: subtext, fontFamily: fonts.body }}
+                        >
+                          {area.city}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -334,7 +360,11 @@ export function Header() {
 
             <nav className="hidden items-center justify-center gap-8 lg:flex">
               {homeNavEntries.map((entry) =>
-                entry.kind === 'anchor' ? (
+                entry.kind === 'services-dropdown' ? (
+                  <div key={entry.id}>{servicesNavDropdown(entry)}</div>
+                ) : entry.kind === 'serving-areas' ? (
+                  <div key="serving-areas">{areasNavDropdown()}</div>
+                ) : entry.kind === 'anchor' ? (
                   <NavLink
                     key={entry.id}
                     href={entry.href}
@@ -344,9 +374,7 @@ export function Header() {
                   >
                     {entry.name}
                   </NavLink>
-                ) : (
-                  <div key="serving-areas">{servingAreasDropdown()}</div>
-                )
+                ) : null
               )}
             </nav>
 
@@ -436,17 +464,48 @@ export function Header() {
 
           <nav className="flex flex-1 flex-col gap-7">
             {homeNavEntries.map((entry) =>
-              entry.kind === 'anchor' ? (
-                <Link
-                  key={entry.id}
-                  href={entry.href}
-                  onClick={closeMenu}
-                  className="text-[clamp(1.65rem,5vw,2.25rem)] font-normal tracking-tight"
-                  style={{ fontFamily: fonts.heading, color: text }}
-                >
-                  {entry.name}
-                </Link>
-              ) : (
+              entry.kind === 'services-dropdown' ? (
+                <div key={entry.id}>
+                  <button
+                    type="button"
+                    onClick={() => setMobileServicesOpen((open) => !open)}
+                    className="flex w-full items-center justify-between text-[clamp(1.65rem,5vw,2.25rem)] font-normal tracking-tight"
+                    style={{ fontFamily: fonts.heading, color: text }}
+                  >
+                    {entry.name}
+                    <span className="text-sm" style={{ color: subtext }}>
+                      {mobileServicesOpen ? '−' : '+'}
+                    </span>
+                  </button>
+
+                  {mobileServicesOpen && (
+                    <div
+                      className="mt-5 space-y-4 pt-5"
+                      style={{ borderTop: `1px solid color-mix(in srgb, ${text} 12%, transparent)` }}
+                    >
+                      <Link
+                        href={entry.href}
+                        onClick={closeMenu}
+                        className="block text-[10px] font-bold uppercase tracking-[0.28em]"
+                        style={{ color: text, fontFamily: fonts.body }}
+                      >
+                        All Services
+                      </Link>
+                      {visibleServices.map((service) => (
+                        <Link
+                          key={service._id}
+                          href={`/service/${resolveServiceSlug(service)}`}
+                          onClick={closeMenu}
+                          className="block text-[10px] font-bold uppercase tracking-[0.28em]"
+                          style={{ color: subtext, fontFamily: fonts.body }}
+                        >
+                          {service.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : entry.kind === 'serving-areas' ? (
                 servingAreaGroups.length > 0 && (
                   <div key="serving-areas">
                     <button
@@ -463,43 +522,71 @@ export function Header() {
 
                     {mobileAreasOpen && (
                       <div
-                        className="mt-5 space-y-6 pt-5"
+                        className="mt-5 space-y-4 pt-5"
                         style={{ borderTop: `1px solid color-mix(in srgb, ${text} 12%, transparent)` }}
                       >
                         {servingAreaGroups.map((group) => (
                           <div key={group.serviceSlug}>
-                            <Link
-                              href={group.href}
-                              onClick={closeMenu}
-                              className="mb-3 block text-[10px] font-bold uppercase tracking-[0.28em]"
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setMobileExpandedServiceSlug((slug) =>
+                                  slug === group.serviceSlug ? null : group.serviceSlug
+                                )
+                              }
+                              className="flex w-full items-center justify-between text-[10px] font-bold uppercase tracking-[0.28em]"
                               style={{ color: text, fontFamily: fonts.body }}
                             >
                               {group.label}
-                            </Link>
-                            <div className="grid grid-cols-2 gap-2">
-                              {group.areas.map((area, idx) => (
+                              <span className="text-sm" style={{ color: subtext }}>
+                                {mobileExpandedServiceSlug === group.serviceSlug ? '−' : '+'}
+                              </span>
+                            </button>
+
+                            {mobileExpandedServiceSlug === group.serviceSlug && (
+                              <div className="mt-3 space-y-2 pl-4">
                                 <Link
-                                  key={idx}
-                                  href={getServiceAreaPageHref(
-                                    group.serviceSlug,
-                                    area,
-                                    serviceAreaPages
-                                  )}
+                                  href={group.href}
                                   onClick={closeMenu}
-                                  className="text-[10px] uppercase tracking-[0.18em]"
-                                  style={{ color: subtext, fontFamily: fonts.body }}
+                                  className="block text-[10px] uppercase tracking-[0.18em]"
+                                  style={{ color: text, fontFamily: fonts.body }}
                                 >
-                                  {area.city}
+                                  View Service
                                 </Link>
-                              ))}
-                            </div>
+                                {group.areas.map((area, idx) => (
+                                  <Link
+                                    key={idx}
+                                    href={getServiceAreaPageHref(
+                                      group.serviceSlug,
+                                      area,
+                                      serviceAreaPages
+                                    )}
+                                    onClick={closeMenu}
+                                    className="block text-[10px] uppercase tracking-[0.18em]"
+                                    style={{ color: subtext, fontFamily: fonts.body }}
+                                  >
+                                    {area.city}
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
                 )
-              )
+              ) : entry.kind === 'anchor' ? (
+                <Link
+                  key={entry.id}
+                  href={entry.href}
+                  onClick={closeMenu}
+                  className="text-[clamp(1.65rem,5vw,2.25rem)] font-normal tracking-tight"
+                  style={{ fontFamily: fonts.heading, color: text }}
+                >
+                  {entry.name}
+                </Link>
+              ) : null
             )}
           </nav>
 

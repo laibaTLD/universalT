@@ -10,9 +10,12 @@ import {
   getCopyrightText,
   getFooterDescriptionContent,
   getFooterNavLinks,
+  getPageHref,
 } from '@/app/lib/siteContent';
 import { tiptapToText } from '@/app/lib/seo';
 import { getImageSrc } from '@/app/lib/utils';
+
+const FOOTER_SERVICES_LIMIT = 5;
 
 export function Footer() {
   const { site, pages, services } = useWebBuilder();
@@ -26,7 +29,7 @@ export function Footer() {
   );
   const copyright = useMemo(() => getCopyrightText(site), [site]);
   const navLinks = useMemo(() => getFooterNavLinks(pages), [pages]);
-  const serviceLinks = useMemo(
+  const allServiceLinks = useMemo(
     () =>
       (services ?? [])
         .filter((s) => s.status === 'published' && s.name?.trim())
@@ -37,6 +40,15 @@ export function Footer() {
         })),
     [services]
   );
+  const serviceLinks = useMemo(
+    () => allServiceLinks.slice(0, FOOTER_SERVICES_LIMIT),
+    [allServiceLinks]
+  );
+  const hasMoreServices = allServiceLinks.length > FOOTER_SERVICES_LIMIT;
+  const servicesPageHref = useMemo(() => {
+    const servicePage = pages.find((p) => p.pageType === 'service-list' && p.status === 'published');
+    return servicePage ? getPageHref(servicePage) : '/services';
+  }, [pages]);
 
   const logoSrc = useMemo(() => {
     const url = site?.footer?.logo?.url || site?.theme?.logoUrl;
@@ -140,6 +152,16 @@ export function Footer() {
                     {link.label}
                   </Link>
                 ))}
+                {hasMoreServices && (
+                  <Link
+                    href={servicesPageHref}
+                    className="mt-1 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] transition-opacity hover:opacity-70"
+                    style={{ color: accentColor }}
+                  >
+                    See more services
+                    <span aria-hidden>→</span>
+                  </Link>
+                )}
               </nav>
             </div>
           )}

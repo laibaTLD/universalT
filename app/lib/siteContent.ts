@@ -198,6 +198,7 @@ export type HeaderNavItem = {
 
 export type HomeHeaderNavEntry =
   | { kind: 'anchor'; id: string; name: string; href: string }
+  | { kind: 'services-dropdown'; id: string; name: string; href: string }
   | { kind: 'serving-areas' };
 
 function isHomeSectionEnabled(enabled: boolean | undefined): boolean {
@@ -390,7 +391,7 @@ export function getFooterNavLinks(pages?: Page[]): FooterNavLink[] {
 
 /** Header nav: published CMS pages, ensuring testimonials uses its CMS slug. */
 export function getHeaderNavLinks(pages?: Page[]): FooterNavLink[] {
-  const links = getPublishedPageNavLinks(pages).filter((link) => link.href !== '/');
+  const links = getPublishedPageNavLinks(pages);
 
   // Fix any existing testimonials entry to use the CMS slug
   for (let i = 0; i < links.length; i++) {
@@ -435,10 +436,10 @@ export function getHeaderNavLinks(pages?: Page[]): FooterNavLink[] {
   return links;
 }
 
-/** Page-based header entries with optional serving-areas dropdown after Services. */
+/** Page-based header entries with optional services dropdown and nested areas menu. */
 export function buildHeaderNavEntries(
   pages?: Page[],
-  options?: { includeServingAreas?: boolean }
+  options?: { includeServingAreas?: boolean; includeServicesDropdown?: boolean }
 ): HomeHeaderNavEntry[] {
   const entries: HomeHeaderNavEntry[] = getHeaderNavLinks(pages).map((link) => ({
     kind: 'anchor',
@@ -447,15 +448,29 @@ export function buildHeaderNavEntries(
     href: link.href,
   }));
 
-  if (!options?.includeServingAreas) return entries;
-
   const servicePage = pages?.find((p) => p.pageType === 'service-list' && p.status === 'published');
   if (!servicePage) return entries;
 
   const servicesIdx = entries.findIndex((e) => e.kind === 'anchor' && e.id === servicePage._id);
   if (servicesIdx < 0) return entries;
 
-  entries.splice(servicesIdx + 1, 0, { kind: 'serving-areas' });
+  let insertAfterIdx = servicesIdx;
+
+  if (options?.includeServicesDropdown) {
+    const anchor = entries[servicesIdx] as Extract<HomeHeaderNavEntry, { kind: 'anchor' }>;
+    entries[servicesIdx] = {
+      kind: 'services-dropdown',
+      id: anchor.id,
+      name: anchor.name,
+      href: anchor.href,
+    };
+    insertAfterIdx = servicesIdx;
+  }
+
+  if (options?.includeServingAreas) {
+    entries.splice(insertAfterIdx + 1, 0, { kind: 'serving-areas' });
+  }
+
   return entries;
 }
 

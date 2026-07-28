@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { cn } from '@/app/lib/utils';
-import { useWebBuilder } from '@/app/providers/WebBuilderProvider';
 import { useThemeColors, useThemeFonts } from '@/app/hooks/useTheme';
 import { CTASection } from './CTASection';
 import { ServiceBanner } from './ServiceBanner';
@@ -11,7 +10,6 @@ import { OtherServicesCard, QuickContactCard } from './ServiceSidebarCards';
 import { ServiceFAQSection } from './ServiceFAQSection';
 import { ServiceServingAreasSection } from './ServiceServingAreasSection';
 import { ServiceContactFormSection } from './ServiceContactFormSection';
-import { ArrowRight, Sparkles } from 'lucide-react';
 
 interface ServiceDetailProps {
     service: any;
@@ -24,7 +22,6 @@ export const ServiceDetail: React.FC<ServiceDetailProps> = ({
     allServices = [],
     className 
 }) => {
-    const { site } = useWebBuilder();
     const themeColors = useThemeColors();
     const themeFonts = useThemeFonts();
 
@@ -54,7 +51,8 @@ export const ServiceDetail: React.FC<ServiceDetailProps> = ({
         <div 
             className={cn('min-h-screen', className)} 
             style={{ 
-                backgroundColor: themeColors.pageBackground
+                backgroundColor: themeColors.pageBackground,
+                fontFamily: themeFonts.body,
             }}
         >
             {/* Elegant Top Banner */}

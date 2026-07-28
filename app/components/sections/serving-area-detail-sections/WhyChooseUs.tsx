@@ -91,30 +91,31 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ whyChooseUs, className
 
   const showTitle = hasRichContent(section.title) || Boolean(titleText);
   const showDescription = hasRichContent(section.description) || Boolean(descriptionText);
-  const borderColor = `color-mix(in srgb, ${colors.mainText} 12%, transparent)`;
+  const borderColor = `color-mix(in srgb, ${colors.darkPrimaryText} 12%, transparent)`;
+  const textColor = colors.darkPrimaryText;
+  const subtextColor = colors.darkSecondaryText;
 
   return (
     <section
-      className={cn('relative border-t', className)}
+      className={cn('relative border-t wb-surface-lux', className)}
       style={{
-        backgroundColor: colors.sectionBackgroundLight,
         borderColor,
         fontFamily: fonts.body,
       }}
     >
-      <div className="mx-auto w-full max-w-[90rem] px-6 md:px-12 lg:px-16 xl:px-20 py-16 sm:py-20 lg:py-24">
+      <div className="wb-surface-lux-inner mx-auto w-full max-w-[90rem] px-6 md:px-12 lg:px-16 xl:px-20 py-10 sm:py-12">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16 xl:gap-20">
           <header className="lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
             <p className="text-[11px] font-medium uppercase tracking-[0.28em] mb-6" style={{ fontFamily: fonts.body }}>
-              <span style={{ color: colors.secondaryText }}>[ </span>
-              <span style={{ color: colors.mainText }}>Why Choose Us</span>
-              <span style={{ color: colors.secondaryText }}> ]</span>
+              <span style={{ color: subtextColor }}>[ </span>
+              <span style={{ color: textColor }}>Why Choose Us</span>
+              <span style={{ color: subtextColor }}> ]</span>
             </p>
 
             {showTitle && (
               <h2
                 className="text-[clamp(1.75rem,3.2vw,2.75rem)] font-normal leading-[1.12] tracking-tight"
-                style={{ fontFamily: fonts.heading, color: colors.mainText }}
+                style={{ fontFamily: fonts.heading, color: textColor }}
               >
                 {hasRichContent(section.title) ? (
                   <TiptapRenderer content={section.title} as="inline" />
@@ -127,7 +128,7 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ whyChooseUs, className
             {showDescription && hasRichContent(section.description) && (
               <div
                 className={cn('mt-5 text-base sm:text-lg font-light leading-relaxed', !showTitle && 'mt-0')}
-                style={{ color: colors.secondaryText }}
+                style={{ color: subtextColor }}
               >
                 <TiptapRenderer content={section.description} />
               </div>
@@ -136,7 +137,7 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ whyChooseUs, className
             {showDescription && !hasRichContent(section.description) && descriptionText && (
               <p
                 className={cn('mt-5 text-base sm:text-lg font-light leading-relaxed', !showTitle && 'mt-0')}
-                style={{ color: colors.secondaryText }}
+                style={{ color: subtextColor }}
               >
                 {descriptionText}
               </p>
@@ -170,7 +171,7 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ whyChooseUs, className
                       <div>
                         <p
                           className="text-[clamp(2rem,4vw,2.75rem)] font-normal leading-none tracking-tight"
-                          style={{ fontFamily: fonts.heading, color: colors.mainText }}
+                          style={{ fontFamily: fonts.heading, color: textColor }}
                         >
                           {stat.value}
                           {stat.suffix && (
@@ -180,7 +181,7 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ whyChooseUs, className
                         {labelText && (
                           <p
                             className="mt-3 text-base sm:text-lg leading-snug"
-                            style={{ fontFamily: fonts.heading, color: colors.mainText }}
+                            style={{ fontFamily: fonts.heading, color: textColor }}
                           >
                             {hasRichContent(item.title) && !statInTitle ? (
                               <TiptapRenderer content={item.title} as="inline" />
@@ -194,7 +195,7 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ whyChooseUs, className
                       <div className="flex gap-4 sm:gap-5">
                         <span
                           className="text-xs tabular-nums font-medium pt-1 shrink-0"
-                          style={{ color: colors.secondaryText, opacity: 0.55 }}
+                          style={{ color: subtextColor, opacity: 0.55 }}
                         >
                           {number}
                         </span>
@@ -202,7 +203,7 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ whyChooseUs, className
                           {item.titleText && (
                             <h3
                               className="text-base sm:text-lg leading-snug"
-                              style={{ fontFamily: fonts.heading, color: colors.mainText }}
+                              style={{ fontFamily: fonts.heading, color: textColor }}
                             >
                               {hasRichContent(item.title) ? (
                                 <TiptapRenderer content={item.title} as="inline" />
@@ -214,7 +215,7 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ whyChooseUs, className
                           {bodyText && (
                             <p
                               className={cn('text-sm sm:text-base leading-relaxed', item.titleText && 'mt-2')}
-                              style={{ color: colors.secondaryText }}
+                              style={{ color: subtextColor }}
                             >
                               {hasRichContent(item.description) ? (
                                 <TiptapRenderer content={item.description} as="inline" />

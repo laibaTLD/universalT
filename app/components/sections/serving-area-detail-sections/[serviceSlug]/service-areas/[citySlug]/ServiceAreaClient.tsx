@@ -1,11 +1,14 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { useWebBuilder } from '@/app/providers/WebBuilderProvider';
 import { Footer } from '@/app/components/layout/Footer';
 import { ServingAreasdetailSection } from '@/app/components/sections/ServingAreasdetailSection';
-import api from '@/app/lib/fetch-api';
+import {
+  mapServiceAreaPageToSectionData,
+  resolvePublishedServiceAreaPage,
+} from '@/app/lib/serviceAreaPageData';
 
 interface ServiceAreaClientProps {
   serviceSlug: string;
@@ -20,41 +23,16 @@ export default function ServiceAreaClient({
   const serviceSlug = (params.serviceSlug as string) || serviceSlugProp;
   const citySlug = (params.citySlug as string) || citySlugProp;
 
-  const { site } = useWebBuilder();
-  const [serviceAreaPage, setServiceAreaPage] = useState<Record<string, unknown> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { serviceAreaPages, loading: siteLoading } = useWebBuilder();
 
-  useEffect(() => {
-    const fetchServiceAreaPage = async () => {
-      if (!site) return;
+  const serviceAreaPage = useMemo(
+    () => resolvePublishedServiceAreaPage(serviceAreaPages, serviceSlug, citySlug),
+    [serviceAreaPages, serviceSlug, citySlug]
+  );
 
-      try {
-        setLoading(true);
-        setError(null);
+  if (siteLoading) return null;
 
-        const response = await api.get(
-          `/public/sites/${site.slug}/service-areas/by-service/${serviceSlug}/${citySlug}`
-        );
-
-        if (response.success) {
-          setServiceAreaPage(response.data);
-        } else {
-          setError('Service area page not found');
-        }
-      } catch {
-        setError('Failed to load service area page');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchServiceAreaPage();
-  }, [site, serviceSlug, citySlug]);
-
-  if (loading) return null;
-
-  if (error || !serviceAreaPage) {
+  if (!serviceAreaPage) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -71,24 +49,7 @@ export default function ServiceAreaClient({
   return (
     <div className="min-h-screen">
       <main>
-        <ServingAreasdetailSection
-          data={{
-            hero: serviceAreaPage.hero,
-            highlights: serviceAreaPage.highlights,
-            about: serviceAreaPage.about,
-            ourServices: serviceAreaPage.ourServices,
-            pageServiceId:
-              typeof serviceAreaPage.serviceId === 'string'
-                ? serviceAreaPage.serviceId
-                : (serviceAreaPage.serviceId as { _id?: string })?._id,
-            cta: serviceAreaPage.cta,
-            serviceDetails: serviceAreaPage.serviceDetails,
-            serviceOverview: serviceAreaPage.serviceOverview,
-            whyChooseUs: serviceAreaPage.whyChooseUs,
-            faqs: serviceAreaPage.faqs,
-            servingAreas: serviceAreaPage.servingAreas,
-          }}
-        />
+        <ServingAreasdetailSection data={mapServiceAreaPageToSectionData(serviceAreaPage)} />
       </main>
       <Footer />
     </div>

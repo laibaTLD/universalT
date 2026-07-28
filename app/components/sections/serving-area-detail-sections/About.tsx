@@ -146,18 +146,19 @@ export const About: React.FC<AboutProps> = ({ about, className }) => {
 
   const showTitle = hasRichContent(section.title) || Boolean(titleText);
   const showDescription = hasRichContent(section.description);
-  const borderColor = `color-mix(in srgb, ${colors.mainText} 12%, transparent)`;
+  const borderColor = `color-mix(in srgb, ${colors.darkPrimaryText} 12%, transparent)`;
+  const textColor = colors.darkPrimaryText;
+  const subtextColor = colors.darkSecondaryText;
 
   return (
     <section
-      className={cn('relative border-t', className)}
+      className={cn('relative border-t wb-surface-lux', className)}
       style={{
-        backgroundColor: colors.sectionBackgroundLight,
         borderColor,
         fontFamily: fonts.body,
       }}
     >
-      <div className="mx-auto w-full max-w-[90rem] px-6 md:px-12 lg:px-16 xl:px-20 py-16 sm:py-20 lg:py-24">
+      <div className="wb-surface-lux-inner mx-auto w-full max-w-[90rem] px-6 md:px-12 lg:px-16 xl:px-20 py-16 sm:py-20 lg:py-24">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16 xl:gap-20 lg:items-stretch">
           {/* Copy column — sets row height on desktop */}
           <div className="lg:col-span-5 flex flex-col justify-center order-1">
@@ -165,15 +166,15 @@ export const About: React.FC<AboutProps> = ({ about, className }) => {
               className="text-[11px] font-medium uppercase tracking-[0.28em] mb-6"
               style={{ fontFamily: fonts.body }}
             >
-              <span style={{ color: colors.secondaryText }}>[ </span>
-              <span style={{ color: colors.mainText }}>About</span>
-              <span style={{ color: colors.secondaryText }}> ]</span>
+              <span style={{ color: subtextColor }}>[ </span>
+              <span style={{ color: textColor }}>About</span>
+              <span style={{ color: subtextColor }}> ]</span>
             </p>
 
             {showTitle && (
               <h2
                 className="text-[clamp(1.75rem,3.2vw,2.75rem)] font-normal leading-[1.12] tracking-tight"
-                style={{ fontFamily: fonts.heading, color: colors.mainText }}
+                style={{ fontFamily: fonts.heading, color: textColor }}
               >
                 {hasRichContent(section.title) ? (
                   <TiptapRenderer content={section.title} as="inline" />
@@ -189,7 +190,7 @@ export const About: React.FC<AboutProps> = ({ about, className }) => {
                   'mt-6 text-base sm:text-lg font-light leading-relaxed max-w-md',
                   !showTitle && 'mt-0'
                 )}
-                style={{ color: colors.secondaryText, fontFamily: fonts.body }}
+                style={{ color: subtextColor, fontFamily: fonts.body }}
               >
                 <TiptapRenderer content={section.description} />
               </div>
@@ -198,7 +199,7 @@ export const About: React.FC<AboutProps> = ({ about, className }) => {
             {!showDescription && tiptapToText(section.description) && (
               <p
                 className="mt-6 text-base sm:text-lg font-light leading-relaxed max-w-md"
-                style={{ color: colors.secondaryText }}
+                style={{ color: subtextColor }}
               >
                 {tiptapToText(section.description)}
               </p>
@@ -280,21 +281,21 @@ export const About: React.FC<AboutProps> = ({ about, className }) => {
                     <div className="flex gap-4 sm:gap-5">
                       <span
                         className="text-xs tabular-nums font-medium pt-1 shrink-0"
-                        style={{ color: colors.secondaryText, opacity: 0.55 }}
+                        style={{ color: subtextColor, opacity: 0.55 }}
                       >
                         {number}
                       </span>
                       <div className="min-w-0">
                         <p
                           className="text-base sm:text-lg leading-snug"
-                          style={{ fontFamily: fonts.heading, color: colors.mainText }}
+                          style={{ fontFamily: fonts.heading, color: textColor }}
                         >
                           {feature.label.trim()}
                         </p>
                         {featureDesc && (
                           <p
                             className="mt-2 text-sm leading-relaxed"
-                            style={{ color: colors.secondaryText }}
+                            style={{ color: subtextColor }}
                           >
                             {featureDesc}
                           </p>
