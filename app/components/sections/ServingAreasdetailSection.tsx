@@ -63,13 +63,31 @@ export const ServingAreasdetailSection: React.FC<ServingAreasdetailSectionProps>
         <OurServices services={data.ourServices} pageServiceId={data.pageServiceId} />
       ) : null}
       {data.cta ? <CTA cta={data.cta} /> : null}
-      {data.serviceDetails ? <ServiceDetails details={data.serviceDetails} /> : null}
       {data.serviceOverview != null &&
       typeof data.serviceOverview === 'object' &&
       (data.serviceOverview as { enabled?: boolean }).enabled !== false ? (
         <ServiceOverview overview={data.serviceOverview} />
       ) : null}
-      {whyChooseUs ? <WhyChooseUs whyChooseUs={whyChooseUs} /> : null}
+      {(whyChooseUs || data.serviceDetails) ? (
+        <div
+          className="grid grid-cols-1 lg:grid-cols-2 lg:items-stretch"
+          style={{
+            borderTop: `1px solid color-mix(in srgb, ${themeColors.mainText} 12%, transparent)`,
+          }}
+        >
+          {whyChooseUs ? <WhyChooseUs whyChooseUs={whyChooseUs} className="h-full min-h-0" /> : null}
+          {data.serviceDetails ? (
+            <div
+              className="h-full min-h-0 border-t lg:border-t-0 lg:border-l"
+              style={{
+                borderColor: `color-mix(in srgb, ${themeColors.mainText} 12%, transparent)`,
+              }}
+            >
+              <ServiceDetails details={data.serviceDetails} className="h-full" />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       {data.faqs ? <FAQs faqs={data.faqs} /> : null}
       {servingAreasEnabled ? <ServingAreas service={servingAreasConfig} /> : null}
     </div>

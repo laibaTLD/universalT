@@ -45,7 +45,8 @@ function normalizeWhyChooseUs(whyChooseUs: unknown): SectionData | null {
   const data = whyChooseUs as Record<string, unknown>;
   if (data.enabled === false) return null;
 
-  const rawItems = (data.reasons ?? data.items) as Array<{
+  // Area pages only — do not fall back to home `whyChooseUsSection.items`
+  const rawItems = data.reasons as Array<{
     title?: unknown;
     description?: unknown;
   }> | undefined;
@@ -91,148 +92,152 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ whyChooseUs, className
 
   const showTitle = hasRichContent(section.title) || Boolean(titleText);
   const showDescription = hasRichContent(section.description) || Boolean(descriptionText);
-  const borderColor = `color-mix(in srgb, ${colors.darkPrimaryText} 12%, transparent)`;
   const textColor = colors.darkPrimaryText;
   const subtextColor = colors.darkSecondaryText;
+  const borderColor = `color-mix(in srgb, ${textColor} 12%, transparent)`;
 
   return (
     <section
-      className={cn('relative border-t wb-surface-lux', className)}
+      className={cn('relative h-full wb-surface-lux', className)}
       style={{
-        borderColor,
         fontFamily: fonts.body,
       }}
     >
-      <div className="wb-surface-lux-inner mx-auto w-full max-w-[90rem] px-6 md:px-12 lg:px-16 xl:px-20 py-10 sm:py-12">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16 xl:gap-20">
-          <header className="lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
-            <p className="text-[11px] font-medium uppercase tracking-[0.28em] mb-6" style={{ fontFamily: fonts.body }}>
-              <span style={{ color: subtextColor }}>[ </span>
-              <span style={{ color: textColor }}>Why Choose Us</span>
-              <span style={{ color: subtextColor }}> ]</span>
-            </p>
+      <div className="wb-surface-lux-inner flex h-full flex-col px-6 py-12 text-center sm:px-8 sm:py-14 lg:px-10 lg:py-16">
+        <header className="mx-auto w-full max-w-lg">
+          <p
+            className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em]"
+            style={{ fontFamily: fonts.body }}
+          >
+            <span style={{ color: subtextColor }}>[ </span>
+            <span style={{ color: textColor }}>Why Choose Us</span>
+            <span style={{ color: subtextColor }}> ]</span>
+          </p>
 
-            {showTitle && (
-              <h2
-                className="text-[clamp(1.75rem,3.2vw,2.75rem)] font-normal leading-[1.12] tracking-tight"
-                style={{ fontFamily: fonts.heading, color: textColor }}
-              >
-                {hasRichContent(section.title) ? (
-                  <TiptapRenderer content={section.title} as="inline" />
-                ) : (
-                  titleText
-                )}
-              </h2>
-            )}
-
-            {showDescription && hasRichContent(section.description) && (
-              <div
-                className={cn('mt-5 text-base sm:text-lg font-light leading-relaxed', !showTitle && 'mt-0')}
-                style={{ color: subtextColor }}
-              >
-                <TiptapRenderer content={section.description} />
-              </div>
-            )}
-
-            {showDescription && !hasRichContent(section.description) && descriptionText && (
-              <p
-                className={cn('mt-5 text-base sm:text-lg font-light leading-relaxed', !showTitle && 'mt-0')}
-                style={{ color: subtextColor }}
-              >
-                {descriptionText}
-              </p>
-            )}
-          </header>
-
-          {section.items.length > 0 && (
-            <ul
-              className="lg:col-span-8 grid gap-0 sm:grid-cols-2 sm:gap-x-10 lg:gap-x-12"
-              style={{ borderTop: `1px solid ${borderColor}` }}
+          {showTitle && (
+            <h2
+              className="text-[clamp(1.2rem,1.8vw,1.65rem)] font-normal leading-[1.25] tracking-tight"
+              style={{ fontFamily: fonts.heading, color: textColor }}
             >
-              {section.items.map((item, index) => {
-                const number = String(index + 1).padStart(2, '0');
-                const statInDescription = isStatValue(item.descriptionText);
-                const statInTitle = isStatValue(item.titleText);
-                const statText = statInDescription ? item.descriptionText : statInTitle ? item.titleText : '';
-                const stat = statText ? formatStatValue(statText) : null;
-                const labelText = statInDescription ? item.titleText : statInTitle ? item.descriptionText : item.titleText;
-                const bodyText =
-                  statInDescription || statInTitle
-                    ? ''
-                    : item.descriptionText;
+              {hasRichContent(section.title) ? (
+                <TiptapRenderer content={section.title} as="inline" />
+              ) : (
+                titleText
+              )}
+            </h2>
+          )}
 
-                return (
-                  <li
-                    key={`${item.titleText}-${index}`}
-                    className="py-7 sm:py-8 border-b"
-                    style={{ borderColor }}
-                  >
-                    {stat ? (
-                      <div>
+          {showDescription && hasRichContent(section.description) && (
+            <div
+              className={cn(
+                'mt-5 text-sm leading-relaxed sm:mt-6 sm:text-[0.9375rem] [&_h1]:mt-3 [&_h1]:font-bold [&_h2]:mt-3 [&_h2]:font-bold [&_h3]:mt-2 [&_h3]:font-bold [&_strong]:font-semibold',
+                !showTitle && 'mt-0'
+              )}
+              style={{ color: subtextColor }}
+            >
+              <TiptapRenderer content={section.description} className="text-inherit" />
+            </div>
+          )}
+
+          {showDescription && !hasRichContent(section.description) && descriptionText && (
+            <p
+              className={cn(
+                'mt-5 text-sm leading-relaxed sm:mt-6 sm:text-[0.9375rem]',
+                !showTitle && 'mt-0'
+              )}
+              style={{ color: subtextColor }}
+            >
+              {descriptionText}
+            </p>
+          )}
+        </header>
+
+        {section.items.length > 0 && (
+          <ul
+            className="mx-auto mt-8 w-full max-w-lg grid gap-0 text-center sm:mt-10"
+            style={{ borderTop: `1px solid ${borderColor}` }}
+          >
+            {section.items.map((item, index) => {
+              const number = String(index + 1).padStart(2, '0');
+              const statInDescription = isStatValue(item.descriptionText);
+              const statInTitle = isStatValue(item.titleText);
+              const statText = statInDescription ? item.descriptionText : statInTitle ? item.titleText : '';
+              const stat = statText ? formatStatValue(statText) : null;
+              const labelText = statInDescription ? item.titleText : statInTitle ? item.descriptionText : item.titleText;
+              const bodyText =
+                statInDescription || statInTitle
+                  ? ''
+                  : item.descriptionText;
+
+              return (
+                <li
+                  key={`${item.titleText}-${index}`}
+                  className="border-b py-5 sm:py-6"
+                  style={{ borderColor }}
+                >
+                  {stat ? (
+                    <div>
+                      <p
+                        className="text-[clamp(1.5rem,2.5vw,2rem)] font-normal leading-none tracking-tight"
+                        style={{ fontFamily: fonts.heading, color: textColor }}
+                      >
+                        {stat.value}
+                        {stat.suffix && (
+                          <span style={{ color: colors.primaryButton }}>{stat.suffix}</span>
+                        )}
+                      </p>
+                      {labelText && (
                         <p
-                          className="text-[clamp(2rem,4vw,2.75rem)] font-normal leading-none tracking-tight"
+                          className="mt-2 text-sm leading-snug sm:text-base"
                           style={{ fontFamily: fonts.heading, color: textColor }}
                         >
-                          {stat.value}
-                          {stat.suffix && (
-                            <span style={{ color: colors.primaryButton }}>{stat.suffix}</span>
+                          {hasRichContent(item.title) && !statInTitle ? (
+                            <TiptapRenderer content={item.title} as="inline" />
+                          ) : (
+                            labelText
                           )}
                         </p>
-                        {labelText && (
-                          <p
-                            className="mt-3 text-base sm:text-lg leading-snug"
-                            style={{ fontFamily: fonts.heading, color: textColor }}
-                          >
-                            {hasRichContent(item.title) && !statInTitle ? (
-                              <TiptapRenderer content={item.title} as="inline" />
-                            ) : (
-                              labelText
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex gap-4 sm:gap-5">
-                        <span
-                          className="text-xs tabular-nums font-medium pt-1 shrink-0"
-                          style={{ color: subtextColor, opacity: 0.55 }}
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <span
+                        className="mb-2 block text-xs font-medium tabular-nums"
+                        style={{ color: subtextColor, opacity: 0.55 }}
+                      >
+                        {number}
+                      </span>
+                      {item.titleText && (
+                        <h3
+                          className="text-sm leading-snug sm:text-base"
+                          style={{ fontFamily: fonts.heading, color: textColor }}
                         >
-                          {number}
-                        </span>
-                        <div className="min-w-0">
-                          {item.titleText && (
-                            <h3
-                              className="text-base sm:text-lg leading-snug"
-                              style={{ fontFamily: fonts.heading, color: textColor }}
-                            >
-                              {hasRichContent(item.title) ? (
-                                <TiptapRenderer content={item.title} as="inline" />
-                              ) : (
-                                item.titleText
-                              )}
-                            </h3>
+                          {hasRichContent(item.title) ? (
+                            <TiptapRenderer content={item.title} as="inline" />
+                          ) : (
+                            item.titleText
                           )}
-                          {bodyText && (
-                            <p
-                              className={cn('text-sm sm:text-base leading-relaxed', item.titleText && 'mt-2')}
-                              style={{ color: subtextColor }}
-                            >
-                              {hasRichContent(item.description) ? (
-                                <TiptapRenderer content={item.description} as="inline" />
-                              ) : (
-                                bodyText
-                              )}
-                            </p>
+                        </h3>
+                      )}
+                      {bodyText && (
+                        <p
+                          className={cn('mx-auto max-w-sm text-sm leading-relaxed', item.titleText && 'mt-2')}
+                          style={{ color: subtextColor }}
+                        >
+                          {hasRichContent(item.description) ? (
+                            <TiptapRenderer content={item.description} as="inline" />
+                          ) : (
+                            bodyText
                           )}
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </section>
   );
