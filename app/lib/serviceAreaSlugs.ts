@@ -25,7 +25,8 @@ export function getAreaCity(area: unknown): string {
 
 export function getAreaRegion(area: unknown): string {
   if (typeof area === 'string') return '';
-  const region = (area as { region?: string })?.region;
+  const record = area as { region?: string; state?: string };
+  const region = record?.region ?? record?.state;
   return typeof region === 'string' ? region.trim() : '';
 }
 

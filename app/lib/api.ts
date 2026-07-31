@@ -95,7 +95,11 @@ export const serviceAreaApi = {
   getServiceAreaPagesBySite: async (siteSlug: string, options?: ApiGetOptions): Promise<any[]> => {
     try {
       const response = await api.get(`/public/sites/${siteSlug}/service-area-pages`, options);
-      return response.data?.data ?? response.data ?? [];
+      const nested = response?.data?.data;
+      if (Array.isArray(nested)) return nested;
+      if (Array.isArray(response?.data)) return response.data;
+      if (Array.isArray(response)) return response;
+      return [];
     } catch (err) {
       if (!options?.silent) {
         console.warn('Service area pages endpoint not available');

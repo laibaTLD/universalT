@@ -32,6 +32,15 @@ type DisplayArea = {
 };
 
 function resolveAreaCity(area: unknown): string {
+  if (typeof area === 'string') {
+    const trimmed = area.trim();
+    if (!trimmed) return '';
+    // "Everett, WA" / "King County, WA"
+    const comma = trimmed.lastIndexOf(',');
+    if (comma > 0) return trimmed.slice(0, comma).trim();
+    return trimmed;
+  }
+
   const fromHelper = getAreaCity(area);
   if (fromHelper) return fromHelper;
 
@@ -39,11 +48,26 @@ function resolveAreaCity(area: unknown): string {
     const record = area as Record<string, unknown>;
     for (const key of ['area', 'location', 'label', 'title', 'name']) {
       const value = record[key];
-      if (typeof value === 'string' && value.trim()) return value.trim();
+      if (typeof value === 'string' && value.trim()) {
+        const trimmed = value.trim();
+        const comma = trimmed.lastIndexOf(',');
+        if (comma > 0) return trimmed.slice(0, comma).trim();
+        return trimmed;
+      }
     }
   }
 
   return '';
+}
+
+function resolveAreaRegionFromUnknown(area: unknown): string {
+  if (typeof area === 'string') {
+    const trimmed = area.trim();
+    const comma = trimmed.lastIndexOf(',');
+    if (comma > 0) return trimmed.slice(comma + 1).trim();
+    return '';
+  }
+  return getAreaRegion(area);
 }
 
 function formatAreaLabel(city: string, region: string): string {
@@ -56,7 +80,7 @@ function normalizeServiceArea(area: unknown): Omit<DisplayArea, 'href' | 'label'
   const city = resolveAreaCity(area);
   if (!city) return null;
 
-  const region = getAreaRegion(area);
+  const region = resolveAreaRegionFromUnknown(area);
   return { city, region };
 }
 
@@ -103,7 +127,7 @@ function AreaItem({
   const content = (
     <div
       className={cn(
-        'transition-all duration-700',
+        'flex h-full flex-col transition-all duration-700',
         compact
           ? 'inline-flex items-center gap-4 px-6 py-5 sm:px-8 sm:py-6'
           : 'border-t px-5 py-6 sm:px-6',
@@ -125,13 +149,15 @@ function AreaItem({
       </span>
 
       {!compact && (
-        <div className="mb-4 mt-3 h-px max-w-12" style={{ backgroundColor: `${accentColor}40` }} />
+        <div className="mb-4 mt-3 h-px max-w-12 shrink-0" style={{ backgroundColor: `${accentColor}40` }} />
       )}
 
       <p
         className={cn(
           'font-normal tracking-tight',
-          compact ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg',
+          compact
+            ? 'text-xl sm:text-2xl'
+            : 'mt-auto min-h-[2.75em] text-base leading-snug sm:min-h-[2.5em] sm:text-lg line-clamp-2',
           area.href && 'transition-opacity group-hover:opacity-70'
         )}
         style={{ color: textColor, fontFamily: fonts.heading }}
@@ -146,7 +172,7 @@ function AreaItem({
       <Link
         href={area.href}
         className={cn(
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+          'h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
           compact ? 'inline-flex' : 'block'
         )}
       >
@@ -166,6 +192,7 @@ export function ServingAreasSection({ servingAreasSection, className }: ServingA
   const serviceAreas = useMemo<DisplayArea[]>(() => {
     const result: DisplayArea[] = [];
     const seen = new Set<string>();
+    const pages = Array.isArray(serviceAreaPages) ? serviceAreaPages : [];
 
     const addArea = (area: unknown, serviceSlug: string) => {
       const normalized = normalizeServiceArea(area);
@@ -173,37 +200,46 @@ export function ServingAreasSection({ servingAreasSection, className }: ServingA
       const key = areaKey(normalized);
       if (seen.has(key)) return;
       seen.add(key);
-      result.push(enrichArea(normalized, serviceSlug, serviceAreaPages));
+      result.push(enrichArea(normalized, serviceSlug, pages));
     };
 
     const resolveSlugForPage = (page: ServiceAreaPage): string => {
-      const serviceRef = page.serviceId as string | { slug?: string } | undefined;
-      if (serviceRef && typeof serviceRef === 'object' && serviceRef.slug) {
-        return resolveServiceSlug({ slug: serviceRef.slug });
+      const fromHelper = getServiceSlugFromAreaPage(page);
+      if (fromHelper) return fromHelper;
+
+      const serviceRef = page.serviceId as string | { slug?: string; name?: string } | undefined;
+      if (serviceRef && typeof serviceRef === 'object') {
+        return resolveServiceSlug(serviceRef);
       }
       if (typeof serviceRef === 'string') {
         const svc = services.find((s) => s._id === serviceRef);
         if (svc) return resolveServiceSlug(svc);
       }
-      return 'service';
+      return '';
+    };
+
+    const pageRegion = (page: ServiceAreaPage): string => {
+      const record = page as ServiceAreaPage & { state?: string };
+      return (page.region || record.state || '').trim();
     };
 
     const addAreasFromServiceAreaPages = (filterPublished = true) => {
-      serviceAreaPages.forEach((page) => {
-        if (filterPublished && page.status !== 'published') return;
+      pages.forEach((page) => {
+        if (filterPublished && page.status && page.status !== 'published') return;
         if (!page.city?.trim()) return;
-        addArea({ city: page.city, region: page.region }, resolveSlugForPage(page));
+        const slug = resolveSlugForPage(page) || 'service';
+        addArea({ city: page.city, region: pageRegion(page) }, slug);
       });
     };
 
     const addAreasFromServiceAreaPagesForSlug = (slug: string, filterPublished = true) => {
       const normSlug = normalizeSlug(slug);
-      serviceAreaPages.forEach((page) => {
-        if (filterPublished && page.status !== 'published') return;
+      pages.forEach((page) => {
+        if (filterPublished && page.status && page.status !== 'published') return;
         if (!page.city?.trim()) return;
-        const pageSlug = getServiceSlugFromAreaPage(page) || resolveSlugForPage(page);
-        if (normalizeSlug(pageSlug) !== normSlug) return;
-        addArea({ city: page.city, region: page.region }, normSlug);
+        const pageSlug = resolveSlugForPage(page);
+        if (!pageSlug || normalizeSlug(pageSlug) !== normSlug) return;
+        addArea({ city: page.city, region: pageRegion(page) }, normSlug);
       });
     };
 
@@ -214,24 +250,22 @@ export function ServingAreasSection({ servingAreasSection, className }: ServingA
       const slug = match ? resolveServiceSlug(match) : normSectionSlug;
 
       addAreasFromServiceAreaPagesForSlug(slug, true);
-      if (result.length === 0) {
-        addAreasFromServiceAreaPagesForSlug(slug, false);
-      }
-      if (result.length === 0) {
-        (match?.serviceAreas ?? []).forEach((area) => addArea(area, slug));
-      }
+      addAreasFromServiceAreaPagesForSlug(slug, false);
+      (match?.serviceAreas ?? []).forEach((area) => addArea(area, slug));
+      (site?.serviceAreas ?? []).forEach((area) => addArea(area, slug));
       return result;
     }
 
+    // Union all live sources (pages + services + site list). Do not stop at first hit —
+    // a single published area page would otherwise hide the rest of site.serviceAreas.
     addAreasFromServiceAreaPages(true);
-    if (result.length > 0) return result;
+    addAreasFromServiceAreaPages(false);
 
     const visibleServices = services.filter(isVisibleService);
     for (const service of visibleServices) {
       const slug = resolveServiceSlug(service);
       (service.serviceAreas ?? []).forEach((area) => addArea(area, slug));
     }
-    if (result.length > 0) return result;
 
     const defaultSlug = visibleServices[0]
       ? resolveServiceSlug(visibleServices[0])
@@ -239,9 +273,6 @@ export function ServingAreasSection({ servingAreasSection, className }: ServingA
         ? resolveServiceSlug(services[0])
         : 'service';
     (site?.serviceAreas ?? []).forEach((area) => addArea(area, defaultSlug));
-    if (result.length > 0) return result;
-
-    addAreasFromServiceAreaPages(false);
 
     return result;
   }, [servingAreasSection?.serviceSlug, services, site?.serviceAreas, serviceAreaPages]);
@@ -342,7 +373,7 @@ export function ServingAreasSection({ servingAreasSection, className }: ServingA
               />
             </div>
 
-            <div ref={gridRef} className={cn('grid gap-4 sm:gap-5', gridClass)}>
+            <div ref={gridRef} className={cn('grid items-stretch gap-4 sm:gap-5', gridClass)}>
               {serviceAreas.map((area, index) => (
                 <AreaItem
                   key={areaKey(area)}
