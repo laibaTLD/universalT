@@ -334,10 +334,12 @@ export function getPublishedPageNavLinks(pages?: Page[]): FooterNavLink[] {
   const seenIds = new Set<string>();
 
   for (const type of FOOTER_PAGE_TYPE_ORDER) {
-    const page = published.find((p) => p.pageType === type);
-    if (page && !seenIds.has(page._id)) {
-      orderedPages.push(page);
-      seenIds.add(page._id);
+    const pagesOfType = published.filter((p) => p.pageType === type);
+    for (const page of pagesOfType) {
+      if (!seenIds.has(page._id)) {
+        orderedPages.push(page);
+        seenIds.add(page._id);
+      }
     }
   }
 
@@ -477,7 +479,8 @@ export function buildHeaderNavEntries(
 export function getCopyrightText(site?: Site | null): string {
   const footerCopyright = tiptapToText(site?.footer?.copyright);
   if (footerCopyright) return footerCopyright;
-  return `©${new Date().getFullYear()}`;
+  const businessName = getBrandName(site);
+  return businessName ? `©${new Date().getFullYear()} ${businessName}` : `©${new Date().getFullYear()}`;
 }
 
 export function getPrimaryHeroImageFromPages(pages?: Page[]): string {

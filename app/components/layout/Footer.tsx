@@ -64,8 +64,13 @@ export function Footer() {
   const address = site?.business?.address;
   const backgroundColor = colors.sectionBackgroundDark || colors.mainText;
   // Builder light / on-dark text (white)
-  const textColor = colors.darkPrimaryText;
-  const mutedColor = colors.darkSecondaryText || colors.darkPrimaryText;
+  // Use theme's textOnDarkColor if set, otherwise default to white (#ffffff)
+  const textOnDarkColor = site?.theme?.textOnDarkColor;
+  const textColor = textOnDarkColor || '#ffffff';
+  const mutedColor =
+    site?.theme?.textOnDarkSecondaryColor ||
+    site?.theme?.darkPrimaryColor ||
+    '#ffffff';
   const accentColor = colors.primaryButton;
 
   return (
