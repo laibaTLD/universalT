@@ -148,6 +148,19 @@ const extractText = (node: any): string => {
   return '';
 };
 
+// Render text, converting markdown-style **bold** into proper bold segments
+const renderMarkdownBold = (text: string): React.ReactNode => {
+  if (!text.includes('**')) return text;
+
+  const parts = text.split('**');
+  return parts.map((part, i) => {
+    if (i % 2 === 1) {
+      return <strong key={i}>{part}</strong>;
+    }
+    return part;
+  });
+};
+
 // Render marks (bold, italic, etc.)
 const renderMarks = (text: React.ReactNode, marks?: TiptapMark[]): React.ReactNode => {
   if (!marks || marks.length === 0) return text;
@@ -235,22 +248,23 @@ const renderNode = (node: any, key?: React.Key): React.ReactNode => {
   if (normalized.type === 'text') {
     const text = typeof normalized.text === 'string' ? normalized.text : extractText(normalized.text);
     if (!text) return null;
-    return <React.Fragment key={key}>{renderMarks(text, normalized.marks)}</React.Fragment>;
+    return <React.Fragment key={key}>{renderMarks(renderMarkdownBold(text), normalized.marks)}</React.Fragment>;
   }
   
   // Handle heading
   if (normalized.type === 'heading') {
     const level = normalized.attrs?.level || 1;
     const children = normalized.content?.map((child: any, i: number) => renderNode(child, i));
+    const headingStyle: React.CSSProperties = { fontFamily: 'var(--wb-heading-font, Georgia, serif)' };
     
     switch (level) {
-      case 1: return <h1 key={key} className="text-4xl font-bold">{children}</h1>;
-      case 2: return <h2 key={key} className="text-3xl font-bold">{children}</h2>;
-      case 3: return <h3 key={key} className="text-2xl font-bold">{children}</h3>;
-      case 4: return <h4 key={key} className="text-xl font-bold">{children}</h4>;
-      case 5: return <h5 key={key} className="text-lg font-bold">{children}</h5>;
-      case 6: return <h6 key={key} className="text-base font-bold">{children}</h6>;
-      default: return <h1 key={key} className="text-4xl font-bold">{children}</h1>;
+      case 1: return <h1 key={key} className="text-4xl font-normal" style={headingStyle}>{children}</h1>;
+      case 2: return <h2 key={key} className="text-3xl font-normal" style={headingStyle}>{children}</h2>;
+      case 3: return <h3 key={key} className="text-2xl font-normal" style={headingStyle}>{children}</h3>;
+      case 4: return <h4 key={key} className="text-xl font-normal" style={headingStyle}>{children}</h4>;
+      case 5: return <h5 key={key} className="text-lg font-normal" style={headingStyle}>{children}</h5>;
+      case 6: return <h6 key={key} className="text-base font-normal" style={headingStyle}>{children}</h6>;
+      default: return <h1 key={key} className="text-4xl font-normal" style={headingStyle}>{children}</h1>;
     }
   }
   
