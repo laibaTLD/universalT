@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Page, Site, Service, BlogPost, ServiceAreaPage } from './types';
 import { getImageSrc } from './utils';
+import { extractGoogleVerificationToken } from './integrations';
 
 interface SEOData {
   title?: string;
@@ -112,6 +113,11 @@ export function generateMetadata(seoData: SEOData, site?: Site): Metadata {
         follow: false,
       },
     };
+  }
+
+  const googleToken = extractGoogleVerificationToken(site?.integrations?.searchConsoleVerification);
+  if (googleToken) {
+    metadata.verification = { google: googleToken };
   }
 
   return metadata;

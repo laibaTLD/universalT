@@ -10,6 +10,8 @@ import { HeroIntroProvider } from '@/app/providers/HeroIntroProvider';
 import { Header } from '@/app/components/layout/Header';
 import { fetchSiteBootstrap } from '@/app/lib/siteBootstrap';
 import { buildFaviconMetadata, getSiteFaviconUrl, getFaviconMimeType } from '@/app/lib/metadata';
+import { extractGoogleVerificationToken, getGtmNoscriptInnerHtml } from '@/app/lib/integrations';
+import { GtmNoscript, SiteHeadIntegrations } from '@/app/components/SiteIntegrations';
 
 export async function generateMetadata(): Promise<Metadata> {
   const data = await fetchSiteBootstrap();
@@ -17,11 +19,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = site?.seo?.title || site?.business?.name || site?.name || 'Web Builder Site';
   const description =
     site?.seo?.description || site?.business?.description || 'Generated site using Web Builder';
+  const googleToken = extractGoogleVerificationToken(site?.integrations?.searchConsoleVerification);
 
   return {
     title,
     description,
     icons: buildFaviconMetadata(site),
+    verification: googleToken ? { google: googleToken } : undefined,
   };
 }
 
@@ -29,10 +33,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const initialData = await fetchSiteBootstrap();
   const faviconUrl = getSiteFaviconUrl(initialData.site);
   const faviconType = getFaviconMimeType(faviconUrl);
+  const gtmNoscriptInnerHtml = getGtmNoscriptInnerHtml(initialData.site);
 
   return (
     <html lang="en">
       <head>
+        <SiteHeadIntegrations site={initialData.site} />
         {faviconUrl ? (
           <>
             <link rel="icon" href="/api/favicon" type={faviconType} sizes="any" />
@@ -42,6 +48,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : null}
       </head>
       <body suppressHydrationWarning className="antialiased">
+        <GtmNoscript html={gtmNoscriptInnerHtml} />
         <ErrorBoundary>
           <WebBuilderProvider initialData={initialData}>
             <LanguageProvider>

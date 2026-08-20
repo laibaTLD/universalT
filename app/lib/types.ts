@@ -20,6 +20,15 @@ export interface SiteBusinessHours {
   hours: BusinessHours[];
 }
 
+export interface SiteIntegrations {
+  ga4?: string;
+  gtmHead?: string;
+  gtmBody?: string;
+  googleAds?: string;
+  searchConsoleVerification?: string;
+  googleMaps?: string;
+}
+
 // Add to existing Site interface - replace the old hours field
 export interface Site {
   _id: string;
@@ -37,6 +46,8 @@ export interface Site {
     gtmId?: string;
     gaId?: string;
   };
+  /** Sitify Studio → Integrations (tracking, verification, Maps). Empty strings mean do not inject. */
+  integrations?: SiteIntegrations;
   theme: {
     logoUrl?: string;
     // Text Colors

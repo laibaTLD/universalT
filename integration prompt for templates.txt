@@ -1,0 +1,158 @@
+Update existing Next.js template to use Sitify Studio `integrations`
+
+Copy everything below the line into Cursor (or your AI coding agent) while the Next.js template repo is open.
+
+---
+
+You are updating an already-built, working Next.js website template that fetches site data from Sitify Studio (Website Builder) via the public API.
+
+## Goal
+
+Wire the new `site.integrations` object into the root layout so tracking / verification / Maps scripts configured in Sitify Studio → **Integrations** are injected correctly on every page.
+
+Do **not** redesign the site. Do **not** break existing SEO, analytics, or layout behavior. Prefer additive changes and keep backward compatibility with legacy `site.seo.gaId` / `site.seo.gtmId` if those are already used.
+
+## Public API (source of truth)
+
+Site config is already fetched from:
+
+```
+GET ${NEXT_PUBLIC_API_BASE_URL}/public/sites/${NEXT_PUBLIC_WEBBUILDER_SITE_SLUG}
+```
+
+(or equivalent helper like `getSiteData(slug)`).
+
+The JSON response now includes:
+
+```json
+{
+  "success": true,
+  "data": {
+    "seo": {
+      "gaId": "G-XXXXXXXXXX",
+      "gtmId": "GTM-XXXXXXX",
+      "...": "..."
+    },
+    "integrations": {
+      "ga4": "",
+      "gtmHead": "",
+      "gtmBody": "",
+      "googleAds": "",
+      "searchConsoleVerification": "",
+      "googleMaps": ""
+    }
+  }
+}
+```
+
+Field meanings:
+
+| Field | Placement | Accepts |
+|---|---|---|
+| `integrations.ga4` | `<head>` | Plain `G-…` ID **or** full gtag.js HTML snippet |
+| `integrations.gtmHead` | `<head>` (as high as possible) | Plain `GTM-…` ID **or** full GTM head `<script>` |
+| `integrations.gtmBody` | immediately after opening `<body>` | GTM `<noscript>` iframe snippet |
+| `integrations.googleAds` | `<head>` | Google Ads / AW conversion scripts (often empty if Ads is in GTM) |
+| `integrations.searchConsoleVerification` | `<head>` | `<meta name="google-site-verification" …>` |
+| `integrations.googleMaps` | `<head>` (or before Maps usage) | Maps JavaScript API `<script>` loader |
+
+Empty strings mean “do not inject”.
+
+Official Google placement (follow this, not Next.js convenience wrappers that nest tags):
+
+- Search Console HTML tag: real `<meta name="google-site-verification">` as a **direct child of `<head>`**. Never wrap it in a `<div>` / `<span>` — Google will not verify nested meta tags.
+- GTM container JS: **as high in `<head>` as possible** (immediately after the opening `<head>`).
+- GTM noscript: **immediately after the opening `<body>`**, as a real `<noscript>` (not wrapped in a `<div>`).
+- GA4 / Google Ads Google tag (gtag.js): **immediately after the opening `<head>`**, on every page. Ads **event** snippets belong on conversion pages only — do not treat this field as a thank-you-page event tag.
+- Maps JS loader: `<head>` is valid; page-level is better if Maps is only used on contact/map pages.
+
+## Required implementation
+
+1. **Find** where the template currently loads GA/GTM (often root `layout.tsx`, `app/layout.tsx`, or a `<Script>` / `next/script` helper using `site.seo.gaId` / `site.seo.gtmId`).
+
+2. **Add types** (or extend existing site type) for:
+
+```ts
+integrations?: {
+  ga4?: string;
+  gtmHead?: string;
+  gtmBody?: string;
+  googleAds?: string;
+  searchConsoleVerification?: string;
+  googleMaps?: string;
+};
+```
+
+3. **Create** a small helper, e.g. `components/SiteIntegrations.tsx` (or `lib/integrations.tsx`), that:
+   - Accepts `integrations` (and optionally legacy `seo.gaId` / `seo.gtmId` as fallback).
+   - Does nothing for empty / whitespace values.
+   - **Search Console:** parse `content="…"` (or a bare token) and emit via Next.js `metadata.verification.google`. Do **not** inject the meta through `dangerouslySetInnerHTML` inside a wrapper element.
+   - **Plain IDs:**
+     - `G-…` → `@next/third-parties/google` `GoogleAnalytics` **or** the official gtag.js snippet.
+     - `GTM-…` → `@next/third-parties/google` `GoogleTagManager` **or** the official GTM head snippet.
+   - **Raw HTML snippets** (value contains `<`): inject as-is in the correct location (head vs first child of body). These are admin-authored.
+   - Prefer putting GTM/gtag in the **initial server HTML** when the value is a full Google snippet, so Tag Assistant / Search Console see it in view-source. `next/script` `afterInteractive` is acceptable for ID-based loaders (Next.js default) but is later than Google’s “immediately after `<head>`” spec — do not use it for Search Console.
+
+4. **Inject in root layout** (App Router: do not rely on a manual `<head>` if Next already generates one). Order inside head: Search Console meta, then GTM, then GA4 / Ads / Maps.
+
+```tsx
+<html>
+  <body>
+    {/* Official GTM: noscript is the first child of body */}
+    {gtmNoscriptInnerHtml ? (
+      <noscript dangerouslySetInnerHTML={{ __html: gtmNoscriptInnerHtml }} />
+    ) : null}
+
+    {children}
+  </body>
+</html>
+```
+
+```ts
+// generateMetadata() — Search Console must be a real head meta
+verification: googleToken ? { google: googleToken } : undefined
+```
+
+If using `@next/third-parties` for a plain GTM/GA ID, place `GoogleTagManager` / `GoogleAnalytics` on the root layout as Next.js documents (child of `<html>`). Still render `gtmBody` as the first child of `<body>` when that field is set.
+
+Do **not** wrap GTM noscript or the Search Console meta in a `<div>`.
+
+5. **Backward compatibility**
+   - If `integrations.ga4` is empty but `seo.gaId` exists → keep current GA behavior.
+   - If `integrations.gtmHead` is empty but `seo.gtmId` exists → keep current GTM behavior.
+   - Do **not** double-load the same tag. If integrations provide GA4/GTM, skip legacy ID injection for that product.
+
+6. **Deduping rules (important)**
+   - If both GTM and GA4 are set, still inject both only if both are provided — do not invent policy beyond that.
+   - If `ga4` / `gtmHead` contains a full script that already embeds the ID, do not also render a second ID-based loader for the same product.
+   - Never inject `googleAds` twice if GTM already owns Ads (template cannot know that — just inject what is present; admins leave Ads empty when using GTM).
+
+7. **Security / SSR**
+   - These snippets are trusted admin content from Sitify Studio — injecting HTML is intentional.
+   - Ensure the site fetch still runs on the server in the layout so tags are present in initial HTML (important for Search Console verification and GTM).
+   - Do not put secrets in `NEXT_PUBLIC_*` beyond what already exists.
+
+8. **Maps**
+   - Only inject `integrations.googleMaps` globally if the template already expects a global Maps loader.
+   - If Maps is only needed on specific pages, prefer reading `site.integrations.googleMaps` on those pages instead of forcing it site-wide — but if the field is filled in Studio, default to head injection unless the template already has a dedicated Maps loader pattern.
+
+## Acceptance checklist
+
+- [ ] `site.integrations` is typed and read from the existing site fetch
+- [ ] Search Console meta appears in `<head>` when set
+- [ ] GTM head script in `<head>` when `gtmHead` set (ID or snippet)
+- [ ] GTM noscript is first content inside `<body>` when `gtmBody` set
+- [ ] GA4 loads when `ga4` set (ID or snippet), without breaking legacy `seo.gaId`
+- [ ] Google Ads snippet injects when `googleAds` set
+- [ ] Google Maps loader injects when `googleMaps` set
+- [ ] Empty fields inject nothing
+- [ ] No double-loading of the same GA/GTM when both integrations + legacy seo IDs are present
+- [ ] Existing pages/styles/routing unchanged
+
+## Out of scope
+
+- Do not change Sitify Studio backend
+- Do not hardcode real measurement IDs in the template
+- Do not remove legacy `seo.gaId` / `seo.gtmId` support yet
+
+Implement this now in the current template codebase.
