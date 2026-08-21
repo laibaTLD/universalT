@@ -12,6 +12,7 @@ import {
   getFooterNavLinks,
   getPageHref,
 } from '@/app/lib/siteContent';
+import { hasLegalBody, normalizeLegalHref } from '@/app/lib/legal';
 import { tiptapToText } from '@/app/lib/seo';
 import { getImageSrc } from '@/app/lib/utils';
 
@@ -49,6 +50,26 @@ export function Footer() {
     const servicePage = pages.find((p) => p.pageType === 'service-list' && p.status === 'published');
     return servicePage ? getPageHref(servicePage) : '/services';
   }, [pages]);
+
+  const legalLinks = useMemo(() => {
+    const existing = new Set(navLinks.map((link) => normalizeLegalHref(link.href)));
+    const links: Array<{ href: string; label: string }> = [];
+
+    if (
+      hasLegalBody(site?.legal?.privacyPolicy) &&
+      !existing.has('/privacy-policy')
+    ) {
+      links.push({ href: '/privacy-policy', label: 'Privacy Policy' });
+    }
+    if (
+      hasLegalBody(site?.legal?.termsOfService) &&
+      !existing.has('/terms-of-service')
+    ) {
+      links.push({ href: '/terms-of-service', label: 'Terms of Service' });
+    }
+
+    return links;
+  }, [navLinks, site?.legal?.privacyPolicy, site?.legal?.termsOfService]);
 
   const logoSrc = useMemo(() => {
     const url = site?.footer?.logo?.url || site?.theme?.logoUrl;
@@ -215,17 +236,18 @@ export function Footer() {
             {copyright || `© ${new Date().getFullYear()} ${businessName}`}
           </p>
 
-          <div
-            className="flex items-center gap-8 text-[10px] uppercase tracking-[0.5em]"
-            style={{ color: mutedColor }}
-          >
-            <Link href="/privacy-policy" className="hover:opacity-70 transition-opacity">
-              Privacy Policy
-            </Link>
-            <Link href="/terms-of-service" className="hover:opacity-70 transition-opacity">
-              Terms of Service
-            </Link>
-          </div>
+          {legalLinks.length > 0 ? (
+            <div
+              className="flex items-center gap-8 text-[10px] uppercase tracking-[0.5em]"
+              style={{ color: mutedColor }}
+            >
+              {legalLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="hover:opacity-70 transition-opacity">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </footer>

@@ -12,6 +12,7 @@ import { fetchSiteBootstrap } from '@/app/lib/siteBootstrap';
 import { buildFaviconMetadata, getSiteFaviconUrl, getFaviconMimeType } from '@/app/lib/metadata';
 import { extractGoogleVerificationToken, getGtmNoscriptInnerHtml } from '@/app/lib/integrations';
 import { GtmNoscript, SiteHeadIntegrations } from '@/app/components/SiteIntegrations';
+import { JsonLd } from '@/app/components/JsonLd';
 
 export async function generateMetadata(): Promise<Metadata> {
   const data = await fetchSiteBootstrap();
@@ -39,6 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en">
       <head>
         <SiteHeadIntegrations site={initialData.site} />
+        <JsonLd site={initialData.site} />
         {faviconUrl ? (
           <>
             <link rel="icon" href="/api/favicon" type={faviconType} sizes="any" />

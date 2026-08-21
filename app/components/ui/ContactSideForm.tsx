@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { X } from 'lucide-react';
 import gsap from 'gsap';
 import { useWebBuilder } from '@/app/providers/WebBuilderProvider';
+import { hasLegalBody } from '@/app/lib/legal';
 
 interface ContactSideFormProps {
   isOpen: boolean;
@@ -56,6 +57,7 @@ export const ContactSideForm: React.FC<ContactSideFormProps> = ({ isOpen, onClos
   const primaryHover = theme?.hoverActiveColorLight || primary;
   const headingFont = theme?.headingFont || 'Georgia, serif';
   const bodyFont = theme?.bodyFont || 'inherit';
+  const hasPrivacyPolicy = hasLegalBody(site?.legal?.privacyPolicy);
   const [mounted, setMounted] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -319,14 +321,18 @@ export const ContactSideForm: React.FC<ContactSideFormProps> = ({ isOpen, onClos
                   style={{ color: muted }}
                 >
                   I accept the{' '}
-                  <Link
-                    href="/privacy-policy"
-                    className="underline underline-offset-2 transition-opacity hover:opacity-80"
-                    style={{ color: primary }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    privacy policy
-                  </Link>
+                  {hasPrivacyPolicy ? (
+                    <Link
+                      href="/privacy-policy"
+                      className="underline underline-offset-2 transition-opacity hover:opacity-80"
+                      style={{ color: primary }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      privacy policy
+                    </Link>
+                  ) : (
+                    'privacy policy'
+                  )}
                 </span>
               </label>
 

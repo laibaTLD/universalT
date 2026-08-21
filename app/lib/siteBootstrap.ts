@@ -1,4 +1,5 @@
 import type { BlogPost, Page, Project, Service, Site } from '@/app/lib/types';
+import { cache } from 'react';
 import {
   blogApi,
   pageApi,
@@ -20,7 +21,7 @@ export type SiteBootstrapData = {
 };
 
 /** Server-side bootstrap so first paint has real content (no blank reload flash). */
-export async function fetchSiteBootstrap(): Promise<SiteBootstrapData> {
+export const fetchSiteBootstrap = cache(async (): Promise<SiteBootstrapData> => {
   const empty: SiteBootstrapData = {
     site: null,
     pages: [],
@@ -60,4 +61,4 @@ export async function fetchSiteBootstrap(): Promise<SiteBootstrapData> {
   } catch {
     return empty;
   }
-}
+});

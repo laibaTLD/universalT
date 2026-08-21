@@ -298,6 +298,46 @@ const renderNode = (node: any, key?: React.Key): React.ReactNode => {
   if (normalized.type === 'hardBreak') {
     return <br key={key} />;
   }
+
+  if (normalized.type === 'horizontalRule') {
+    return <hr key={key} className="my-8 border-t border-current/20" />;
+  }
+
+  if (normalized.type === 'table') {
+    const children = normalized.content?.map((child: any, i: number) => renderNode(child, i));
+    return (
+      <div key={key} className="my-6 overflow-x-auto">
+        <table className="w-full border-collapse">{children}</table>
+      </div>
+    );
+  }
+
+  if (normalized.type === 'tableRow') {
+    const children = normalized.content?.map((child: any, i: number) => renderNode(child, i));
+    return <tr key={key}>{children}</tr>;
+  }
+
+  if (normalized.type === 'tableHeader') {
+    const children = normalized.content?.map((child: any, i: number) => renderNode(child, i));
+    const colSpan = normalized.attrs?.colspan as number | undefined;
+    const rowSpan = normalized.attrs?.rowspan as number | undefined;
+    return (
+      <th key={key} colSpan={colSpan} rowSpan={rowSpan} className="border px-3 py-2 text-left font-semibold">
+        {children}
+      </th>
+    );
+  }
+
+  if (normalized.type === 'tableCell') {
+    const children = normalized.content?.map((child: any, i: number) => renderNode(child, i));
+    const colSpan = normalized.attrs?.colspan as number | undefined;
+    const rowSpan = normalized.attrs?.rowspan as number | undefined;
+    return (
+      <td key={key} colSpan={colSpan} rowSpan={rowSpan} className="border px-3 py-2">
+        {children}
+      </td>
+    );
+  }
   
   // Handle list items
   if (normalized.type === 'listItem') {
@@ -386,6 +426,13 @@ export const TiptapRenderer: React.FC<TiptapRendererProps> = ({
         // JSON parse failed, render as plain text
         return <span className={className}>{trimmed}</span>;
       }
+    }
+    // Legacy HTML from older legal/CMS fields
+    if (/<[a-z][\s\S]*>/i.test(trimmed)) {
+      if (as === 'inline') {
+        return <span className={className} dangerouslySetInnerHTML={{ __html: trimmed }} />;
+      }
+      return <div className={blockWrapperClass(className)} dangerouslySetInnerHTML={{ __html: trimmed }} />;
     }
     // Plain text - render directly
     return <span className={className}>{trimmed}</span>;

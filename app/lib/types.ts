@@ -29,6 +29,23 @@ export interface SiteIntegrations {
   googleMaps?: string;
 }
 
+export type LegalPage = {
+  heading?: string;
+  description?: string;
+  content?: unknown; // Tiptap JSON object or stringified JSON
+};
+
+export type SiteLegal = {
+  termsOfService?: LegalPage;
+  privacyPolicy?: LegalPage;
+};
+
+export type SiteFiles = {
+  sitemap?: string;
+  robotsTxt?: string;
+  schemaJson?: string;
+};
+
 // Add to existing Site interface - replace the old hours field
 export interface Site {
   _id: string;
@@ -134,23 +151,8 @@ export interface Site {
     showContactInfo: boolean;
   };
   serviceAreas: string[];
-  legal: {
-    termsOfService?: {
-      heading?: string;
-      description?: string;
-      content?: any; // Tiptap JSON
-    };
-    privacyPolicy?: {
-      heading?: string;
-      description?: string;
-      content?: any; // Tiptap JSON
-    };
-  };
-  files: {
-    sitemap?: string;
-    robotsTxt?: string;
-    schemaJson?: string;
-  };
+  legal?: SiteLegal;
+  files?: SiteFiles;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
